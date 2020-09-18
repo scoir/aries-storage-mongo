@@ -12,6 +12,11 @@ MongoDB implementation for Hyperledger Aries storage
 
 Usage:
 
-```
-todo
+```go
+    ar, err := aries.New(aries.WithStoreProvider(
+        mongodbstore.NewProvider("mongodb://localhost:27017", mongodbstore.WithDBPrefix("aries"))))
+    if err != nil {
+        //don't do this :)
+        log.Panicf("oh no! %s", err)
+    }
 ```
