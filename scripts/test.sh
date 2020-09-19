@@ -17,6 +17,6 @@ remove_docker_container
 
 docker run -p 27017:27017 --name MongoStoreTest -d mongo:4.2.8 >/dev/null || true
 
-go test ./pkg/storage -count=1 -race -coverprofile=profile.out -covermode=atomic -timeout=10m
+go test ./pkg/... -count=1 -race -coverprofile=profile.out -covermode=atomic -timeout=10m
 
 remove_docker_container

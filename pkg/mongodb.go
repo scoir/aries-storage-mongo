@@ -4,7 +4,7 @@ Copyright Scoir Inc Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package mongodbstore
+package pkg
 
 import (
 	"context"
