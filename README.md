@@ -20,3 +20,11 @@ Usage:
         log.Panicf("oh no! %s", err)
     }
 ```
+
+### Development
+
+```
+make
+```
+
+to run tests.
