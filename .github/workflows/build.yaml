@@ -30,4 +30,5 @@ jobs:
         timeout-minutes: 10
         uses: codecov/codecov-action@v1.0.6
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.txt
