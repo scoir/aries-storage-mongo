@@ -21,6 +21,7 @@ import (
 	"github.com/hyperledger/aries-framework-go/pkg/storage"
 )
 
+//Data is a wrapper for the stored key/value pair
 type Data struct {
 	Key   string `bson:"_id" json:"Key"`
 	Value []byte `bson:"Value" json:"Value"`
