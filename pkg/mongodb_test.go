@@ -195,7 +195,7 @@ func TestMongoDBStore(t *testing.T) {
 	})
 
 	t.Run("Test mongodb store failures", func(t *testing.T) {
-		prov := NewProvider("wrongURL", nil)
+		prov := NewProvider("wrongURL")
 		require.NotNil(t, prov)
 
 		store, err := prov.OpenStore("sample")

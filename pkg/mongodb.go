@@ -40,8 +40,6 @@ func WithDBPrefix(dbPrefix string) Option {
 // Provider mongodb implementation of storage.Provider interface
 type Provider struct {
 	dial     string
-	client   *mongo.Client
-	db       *mongo.Database
 	dbs      map[string]*mongodbStore
 	dbPrefix string
 	sync.RWMutex
@@ -49,7 +47,12 @@ type Provider struct {
 
 // NewProvider instantiates Provider
 func NewProvider(dial string, opts ...Option) *Provider {
-	return &Provider{dial: dial, dbs: map[string]*mongodbStore{}}
+	p := &Provider{dial: dial, dbs: map[string]*mongodbStore{}}
+	for _, opt := range opts {
+		opt(p)
+	}
+
+	return p
 }
 
 // OpenStore opens and returns a store for given name space.
@@ -66,21 +69,22 @@ func (r *Provider) OpenStore(name string) (storage.Store, error) {
 		return store, nil
 	}
 
-	if r.client == nil {
-		mongoClient, err := mongo.NewClient(options.Client().ApplyURI(r.dial))
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to create new mongo client opening store")
-		}
-		err = mongoClient.Connect(context.Background())
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to connect to mongo opening a new store")
-		}
-		r.client = mongoClient
-		r.db = r.client.Database(name)
+	mongoClient, err := mongo.NewClient(options.Client().ApplyURI(r.dial))
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create new mongo client opening store")
 	}
+	err = mongoClient.Connect(context.Background())
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to connect to mongo opening a new store")
+	}
+	client := mongoClient
+	db := client.Database(name)
 
 	store = &mongodbStore{
-		coll: r.db.Collection(name),
+		db:     db,
+		client: client,
+		coll:   db.Collection(name),
+		name:   name,
 	}
 	r.dbs[name] = store
 
@@ -96,30 +100,47 @@ func (r *Provider) Close() error {
 		return nil
 	}
 
-	r.dbs = make(map[string]*mongodbStore)
-
-	err := r.client.Disconnect(context.Background())
-	if err != nil {
-		return errors.Wrap(err, "unable to disconnect from mongo")
+	var names []string
+	for name, _ := range r.dbs {
+		names = append(names, name)
 	}
+
+	for _, name := range names {
+		err := r.CloseStore(name)
+		if err != nil {
+			return errors.Wrap(err, "unable to close provder, error in store")
+		}
+	}
+
+	r.dbs = make(map[string]*mongodbStore)
 
 	return nil
 }
 
 // CloseStore closes level name store of given name
 func (r *Provider) CloseStore(name string) error {
-	k := strings.ToLower(name)
+	if r.dbPrefix != "" {
+		name = r.dbPrefix + "_" + name
+	}
 
-	_, ok := r.dbs[k]
+	store, ok := r.dbs[name]
 	if ok {
-		delete(r.dbs, k)
+		err := store.client.Disconnect(context.Background())
+		if err != nil {
+			return errors.Wrap(err, "unable to disconnect from mongo")
+		}
+
+		delete(r.dbs, name)
 	}
 
 	return nil
 }
 
 type mongodbStore struct {
-	coll *mongo.Collection
+	client *mongo.Client
+	db     *mongo.Database
+	coll   *mongo.Collection
+	name   string
 }
 
 // Put stores the key and the record
