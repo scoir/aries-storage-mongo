@@ -49,7 +49,13 @@ type Provider struct {
 
 // NewProvider instantiates Provider
 func NewProvider(dial string, opts ...Option) *Provider {
-	return &Provider{dial: dial, dbs: map[string]*mongodbStore{}}
+	p := &Provider{dial: dial, dbs: map[string]*mongodbStore{}}
+
+	for _, opt := range opts {
+		opt(p)
+	}
+
+	return p
 }
 
 // OpenStore opens and returns a store for given name space.
@@ -60,6 +66,8 @@ func (r *Provider) OpenStore(name string) (storage.Store, error) {
 	if r.dbPrefix != "" {
 		name = r.dbPrefix + "_" + name
 	}
+
+	name = strings.ToLower(name)
 
 	store, ok := r.dbs[name]
 	if ok {
@@ -108,11 +116,15 @@ func (r *Provider) Close() error {
 
 // CloseStore closes level name store of given name
 func (r *Provider) CloseStore(name string) error {
-	k := strings.ToLower(name)
+	if r.dbPrefix != "" {
+		name = r.dbPrefix + "_" + name
+	}
 
-	_, ok := r.dbs[k]
+	name = strings.ToLower(name)
+
+	_, ok := r.dbs[name]
 	if ok {
-		delete(r.dbs, k)
+		delete(r.dbs, name)
 	}
 
 	return nil

@@ -194,8 +194,20 @@ func TestMongoDBStore(t *testing.T) {
 		require.Len(t, prov.dbs, 2)
 	})
 
+	t.Run("Test dbprefix option", func(t *testing.T) {
+		prov := NewProvider(mongoStoreDBURL, WithDBPrefix("dbPrefix"))
+		require.NotNil(t, prov)
+
+		store, err := prov.OpenStore("sample")
+		require.NoError(t, err)
+		require.NotNil(t, store)
+
+		_, ok := prov.dbs["dbprefix_sample"]
+		require.True(t, ok)
+	})
+
 	t.Run("Test mongodb store failures", func(t *testing.T) {
-		prov := NewProvider("wrongURL", nil)
+		prov := NewProvider("wrongURL")
 		require.NotNil(t, prov)
 
 		store, err := prov.OpenStore("sample")
